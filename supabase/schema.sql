@@ -145,7 +145,59 @@ CREATE TABLE IF NOT EXISTS public.contact_messages (
 );
 
 -- ---------------------------------------------------------
--- 9. SERVER-SIDE TRIGGER: MEAL COUNT & DOUBLE-COUNTING PREVENTION
+-- 9. AUTOMATIC NEW USER SIGNUP TRIGGER ON auth.users
+-- ---------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.handle_new_user_signup()
+RETURNS TRIGGER AS $$
+DECLARE
+  user_full_name TEXT;
+  user_phone TEXT;
+  user_address TEXT;
+BEGIN
+  user_full_name := COALESCE(NEW.raw_user_meta_data->>'full_name', SPLIT_PART(NEW.email, '@', 1));
+  user_phone := COALESCE(NEW.raw_user_meta_data->>'phone', '');
+  user_address := COALESCE(NEW.raw_user_meta_data->>'address', '');
+
+  -- 1. Insert or update user profile
+  INSERT INTO public.profiles (id, full_name, email, phone, address, role)
+  VALUES (NEW.id, user_full_name, NEW.email, user_phone, user_address, 'customer')
+  ON CONFLICT (id) DO UPDATE SET
+    full_name = EXCLUDED.full_name,
+    phone = EXCLUDED.phone,
+    address = EXCLUDED.address;
+
+  -- 2. Automatically activate default 20-meal subscription
+  INSERT INTO public.subscriptions (user_id, total_meals, meals_delivered, meals_remaining, status, start_date)
+  VALUES (NEW.id, 20, 0, 20, 'active', CURRENT_DATE)
+  ON CONFLICT DO NOTHING;
+
+  -- 3. Initialize default meal preferences
+  INSERT INTO public.meal_preferences (user_id, dietary_preferences, spice_preference)
+  VALUES (NEW.id, 'Balanced Healthy', 'Medium')
+  ON CONFLICT (user_id) DO NOTHING;
+
+  -- 4. Create welcome notification
+  INSERT INTO public.notifications (user_id, title, message, type)
+  VALUES (
+    NEW.id,
+    'Welcome to Love Thy Salad! 🌿',
+    'Your 20-meal subscription has been activated. Enjoy fresh healthy meals delivered to your doorstep in Baner, Pune.',
+    'success'
+  );
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_new_user_signup();
+
+-- ---------------------------------------------------------
+-- 10. SERVER-SIDE TRIGGER: MEAL COUNT & DOUBLE-COUNTING PREVENTION
 -- ---------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.handle_delivery_status_change()
 RETURNS TRIGGER AS $$
@@ -204,7 +256,7 @@ FOR EACH ROW
 EXECUTE FUNCTION public.handle_delivery_status_change();
 
 -- ---------------------------------------------------------
--- 10. ROW LEVEL SECURITY (RLS) POLICIES
+-- 11. ROW LEVEL SECURITY (RLS) POLICIES
 -- ---------------------------------------------------------
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -216,9 +268,12 @@ ALTER TABLE public.meal_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
 
--- Profiles: Customers can read/update their own profile
+-- Profiles: Customers can read/insert/update their own profile
 CREATE POLICY "Users can read own profile" ON public.profiles
   FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can insert own profile" ON public.profiles
+  FOR INSERT WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Users can update own profile" ON public.profiles
   FOR UPDATE USING (auth.uid() = id);
@@ -230,9 +285,12 @@ CREATE POLICY "Public read active categories" ON public.categories
 CREATE POLICY "Public read active products" ON public.products
   FOR SELECT USING (active = true);
 
--- Subscriptions: User can view their own subscription
+-- Subscriptions: User can view and insert their own subscription
 CREATE POLICY "Users can view own subscriptions" ON public.subscriptions
   FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own subscription" ON public.subscriptions
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Deliveries: User can view their own deliveries
 CREATE POLICY "Users can view own deliveries" ON public.deliveries
@@ -251,7 +309,7 @@ CREATE POLICY "Anyone can submit contact message" ON public.contact_messages
   FOR INSERT WITH CHECK (true);
 
 -- ---------------------------------------------------------
--- 11. SEED DATA (CATEGORIES & PRODUCTS)
+-- 12. SEED DATA (CATEGORIES & PRODUCTS)
 -- ---------------------------------------------------------
 
 INSERT INTO public.categories (id, name, description, image_url, active) VALUES
