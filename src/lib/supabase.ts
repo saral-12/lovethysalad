@@ -10,6 +10,12 @@ export const isSupabaseConfigured = Boolean(
     !supabaseAnonKey.includes('dummy')
 );
 
+export const Config = {
+  supabaseUrl,
+  supabaseAnonKey,
+  isConfigured: isSupabaseConfigured,
+};
+
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key',
@@ -20,4 +26,5 @@ export const supabase = createClient(
     },
   }
 );
+
 
