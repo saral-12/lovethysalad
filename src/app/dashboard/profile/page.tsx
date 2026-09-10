@@ -81,6 +81,21 @@ export default function CustomerProfilePage() {
         </div>
 
         <div className="space-y-6">
+          {/* CUSTOMER ID BANNER */}
+          <div className="p-4 rounded-2xl bg-salad-dark text-white border border-salad-fresh/30 flex items-center justify-between shadow-md">
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-salad-fresh block">
+                Unique Customer ID
+              </span>
+              <span className="text-2xl font-mono font-extrabold tracking-widest text-white">
+                {user?.customer_id || 'LTS-01'}
+              </span>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-salad-fresh text-salad-dark">
+              Sequential ID
+            </span>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <label className="block text-xs font-bold text-salad-dark mb-1.5 uppercase">

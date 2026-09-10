@@ -128,20 +128,39 @@ export async function POST(req: Request) {
       );
     }
 
-    try {
-      // 6. Create customer's profile row
-      const { error: profError } = await adminSupabase.from('profiles').upsert({
-        id: userId,
-        full_name: fullName,
-        email: email.toLowerCase().trim(),
-        phone: phone || '',
-        address: address || '',
-        role: 'customer',
-        updated_at: new Date().toISOString(),
-      });
+    let customerId: string | undefined;
 
-      if (profError) {
-        console.error('Server error creating profile row:', profError);
+    try {
+      // 6. Create customer's profile row and retrieve generated customer_id
+      const { data: existingProf } = await adminSupabase
+        .from('profiles')
+        .select('customer_id')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (existingProf?.customer_id) {
+        customerId = existingProf.customer_id;
+      } else {
+        const { data: insertedProf, error: profError } = await adminSupabase
+          .from('profiles')
+          .upsert({
+            id: userId,
+            full_name: fullName,
+            email: email.toLowerCase().trim(),
+            phone: phone || '',
+            address: address || '',
+            role: 'customer',
+            updated_at: new Date().toISOString(),
+          })
+          .select('customer_id')
+          .maybeSingle();
+
+        if (profError) {
+          console.error('Server error creating profile row:', profError);
+        }
+        if (insertedProf?.customer_id) {
+          customerId = insertedProf.customer_id;
+        }
       }
 
       // 7. Create default 20-meal subscription (total_meals: 20, meals_delivered: 0, meals_remaining: 20, status: active)
@@ -202,10 +221,11 @@ export async function POST(req: Request) {
       console.error('Server database insertion error:', dbErr);
     }
 
-    // 10. Return success response
+    // 10. Return success response with customer_id
     return NextResponse.json({
       success: true,
-      message: 'Account created successfully! Your 20-meal subscription is now active.',
+      message: 'Account created successfully!',
+      customer_id: customerId || 'LTS-01',
       userId,
     });
   } catch (err: any) {

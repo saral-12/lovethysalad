@@ -8,10 +8,29 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ---------------------------------------------------------
+-- 0. CUSTOMER ID SEQUENCE & GENERATOR FUNCTION
+-- Format: LTS-01, LTS-02, ..., LTS-10, ..., LTS-100
+-- ---------------------------------------------------------
+CREATE SEQUENCE IF NOT EXISTS public.customer_id_seq
+  START WITH 1
+  INCREMENT BY 1;
+
+CREATE OR REPLACE FUNCTION public.generate_customer_id()
+RETURNS TEXT AS $$
+DECLARE
+  next_val BIGINT;
+BEGIN
+  next_val := nextval('public.customer_id_seq');
+  RETURN 'LTS-' || LPAD(next_val::TEXT, 2, '0');
+END;
+$$ LANGUAGE plpgsql;
+
+-- ---------------------------------------------------------
 -- 1. PROFILES TABLE
 -- ---------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  customer_id TEXT UNIQUE DEFAULT public.generate_customer_id(),
   full_name TEXT NOT NULL,
   email TEXT NOT NULL,
   phone TEXT,
@@ -21,8 +40,24 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Index for profiles
+-- Ensure customer_id column exists if table was created previously
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS customer_id TEXT UNIQUE DEFAULT public.generate_customer_id();
+
+-- Indexes for profiles
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_customer_id ON public.profiles(customer_id);
+
+-- Safe Migration: Backfill customer_id for existing profiles ordered by created_at
+DO $$
+DECLARE
+  r RECORD;
+  seq_val INT;
+BEGIN
+  FOR r IN SELECT id FROM public.profiles WHERE customer_id IS NULL OR customer_id = '' ORDER BY created_at ASC LOOP
+    seq_val := nextval('public.customer_id_seq');
+    UPDATE public.profiles SET customer_id = 'LTS-' || LPAD(seq_val::TEXT, 2, '0') WHERE id = r.id;
+  END LOOP;
+END $$;
 
 -- ---------------------------------------------------------
 -- 2. CATEGORIES TABLE
@@ -158,9 +193,9 @@ BEGIN
   user_phone := COALESCE(NEW.raw_user_meta_data->>'phone', '');
   user_address := COALESCE(NEW.raw_user_meta_data->>'address', '');
 
-  -- 1. Insert or update user profile
-  INSERT INTO public.profiles (id, full_name, email, phone, address, role)
-  VALUES (NEW.id, user_full_name, NEW.email, user_phone, user_address, 'customer')
+  -- 1. Insert or update user profile with unique customer_id
+  INSERT INTO public.profiles (id, customer_id, full_name, email, phone, address, role)
+  VALUES (NEW.id, public.generate_customer_id(), user_full_name, NEW.email, user_phone, user_address, 'customer')
   ON CONFLICT (id) DO UPDATE SET
     full_name = EXCLUDED.full_name,
     phone = EXCLUDED.phone,

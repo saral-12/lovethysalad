@@ -54,8 +54,14 @@ export default function DashboardOverviewPage() {
           <h1 className="text-3xl sm:text-4xl font-extrabold font-heading text-salad-dark tracking-tight">
             {greeting}, {user?.full_name?.split(' ')[0]} 👋
           </h1>
-          <p className="text-sm text-gray-600 mt-1">
-            "Here's a look at your Love Thy Salad journey."
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-xs font-bold text-salad-dark uppercase tracking-wider">Customer ID</span>
+            <span className="px-3 py-1 rounded-xl bg-salad-dark text-salad-fresh text-xs font-mono font-extrabold tracking-widest border border-salad-fresh/30 shadow-sm">
+              {user?.customer_id || 'LTS-01'}
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 mt-1.5">
+            Here is a look at your Love Thy Salad subscription journey.
           </p>
         </div>
 

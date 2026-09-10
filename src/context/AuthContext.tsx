@@ -387,15 +387,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Auto sign-in or establish user session
         const loginRes = await login(email, password);
         if (loginRes.success) {
-          return { success: true, message: apiData.message };
+          return { success: true, message: apiData.message, customer_id: apiData.customer_id };
         }
 
         if (apiData?.userId) {
           await loadSupabaseUserData(apiData.userId);
-          return { success: true, message: apiData.message };
+          return { success: true, message: apiData.message, customer_id: apiData.customer_id };
         }
 
-        return { success: true, message: apiData.message };
+        return { success: true, message: apiData.message, customer_id: apiData.customer_id };
       } catch (err: any) {
         console.error('Customer signup API error:', err);
         return {
@@ -409,6 +409,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const newUserId = 'u_' + Date.now();
     const newProf: Profile = {
       id: newUserId,
+      customer_id: 'LTS-01',
       full_name: fullName,
       email,
       phone,

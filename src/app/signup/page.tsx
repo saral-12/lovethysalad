@@ -53,11 +53,12 @@ export default function SignupPage() {
     setIsSubmitting(false);
 
     if (res.success) {
+      const customerId = (res as any).customer_id || 'LTS-01';
       setToastType('success');
-      setToastMessage('Account created successfully! Your 20-meal subscription is active.');
+      setToastMessage(`🎉 Welcome to Love Thy Salad! Your Customer ID is: ${customerId}`);
       setTimeout(() => {
         router.push('/dashboard');
-      }, 800);
+      }, 1800);
     } else {
       setToastType('error');
       setToastMessage(res.error || 'Failed to create account. Please check your details and try again.');

@@ -7,7 +7,7 @@ import { Box, CheckCircle2, Calendar, Clock, ArrowRight, ShieldCheck } from 'luc
 import { motion } from 'framer-motion';
 
 export default function MySubscriptionPage() {
-  const { subscription, deliveries } = useAuth();
+  const { user, subscription, deliveries } = useAuth();
 
   const totalMeals = subscription?.total_meals ?? 20;
   const mealsDelivered = subscription?.meals_delivered ?? 0;
@@ -30,15 +30,25 @@ export default function MySubscriptionPage() {
       <div className="rounded-3xl bg-white border border-salad-leaf/10 shadow-soft-sm p-8 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-gray-100">
           <div>
-            <span className="text-xs font-bold text-salad-leaf uppercase tracking-wider">
-              Active Plan
-            </span>
-            <h2 className="text-2xl font-bold font-heading text-salad-dark mt-1">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-bold text-salad-leaf uppercase tracking-wider">
+                Active Plan
+              </span>
+              <span className="px-2.5 py-0.5 rounded-md bg-salad-dark text-salad-fresh text-xs font-mono font-extrabold tracking-widest border border-salad-fresh/30">
+                {user?.customer_id || 'LTS-01'}
+              </span>
+            </div>
+            <h2 className="text-2xl font-bold font-heading text-salad-dark">
               20 Meal Subscription Plan
             </h2>
-            <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-              <Calendar className="w-4 h-4 text-salad-leaf" />
-              <span>Start Date: {subscription?.start_date || 'September 1, 2026'}</span>
+            <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 mt-1">
+              <div className="flex items-center gap-1">
+                <Calendar className="w-4 h-4 text-salad-leaf" />
+                <span>Start Date: {subscription?.start_date || 'September 1, 2026'}</span>
+              </div>
+              <span className="font-bold text-salad-dark">
+                Customer ID: {user?.customer_id || 'LTS-01'}
+              </span>
             </div>
           </div>
 

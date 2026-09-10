@@ -1,7 +1,8 @@
 export type UserRole = 'customer' | 'admin';
 
 export interface Profile {
-  id: string;
+  id: string; // Supabase Auth UUID
+  customer_id?: string; // LTS-01, LTS-02, ...
   full_name: string;
   email: string;
   phone?: string;
