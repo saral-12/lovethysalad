@@ -13,48 +13,64 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, isLocalFallback: true });
     }
 
-    // Use Service Role Key if provided (bypasses RLS), otherwise fallback to Anon Key
     const supabaseKey = serviceRoleKey || supabaseAnonKey;
     const adminSupabase = createClient(supabaseUrl, supabaseKey, {
       auth: { persistSession: false },
     });
 
-    // 1. Sign up user in auth.users
-    const { data: authData, error: authError } = await adminSupabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-          phone,
-          address,
-        },
-      },
-    });
+    let userId: string | undefined;
 
-    if (authError) {
-      // If error is not a soft user exists message, return error
-      if (!authError.message.toLowerCase().includes('already registered')) {
-        return NextResponse.json({ success: false, error: authError.message }, { status: 400 });
+    // 1. If serviceRoleKey is available, use admin.createUser with auto-confirm (no emails sent, no email rate limits)
+    if (serviceRoleKey) {
+      try {
+        const { data: createData, error: createError } = await adminSupabase.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: {
+            full_name: fullName,
+            phone,
+            address,
+          },
+        });
+
+        if (createData?.user) {
+          userId = createData.user.id;
+        } else if (createError && createError.message.toLowerCase().includes('already registered')) {
+          const { data: userList } = await adminSupabase.auth.admin.listUsers();
+          const existingUser = userList?.users?.find(
+            (u) => u.email?.toLowerCase() === email.toLowerCase()
+          );
+          if (existingUser) userId = existingUser.id;
+        }
+      } catch (adminErr) {
+        console.warn('Admin createUser fallback to standard signUp:', adminErr);
       }
     }
 
-    // Determine target User ID
-    let userId = authData?.user?.id;
-
+    // Fallback to standard signUp if admin.createUser was not used or did not set userId
     if (!userId) {
-      // Try to fetch user by email if already registered
-      const { data: userList } = await adminSupabase.auth.admin.listUsers();
-      const existingUser = userList?.users?.find(
-        (u) => u.email?.toLowerCase() === email.toLowerCase()
-      );
-      if (existingUser) {
-        userId = existingUser.id;
+      const { data: authData, error: authError } = await adminSupabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            phone,
+            address,
+          },
+        },
+      });
+
+      if (authError && !authError.message.toLowerCase().includes('already registered') && !authError.message.toLowerCase().includes('rate limit')) {
+        return NextResponse.json({ success: false, error: authError.message }, { status: 400 });
       }
+
+      userId = authData?.user?.id;
     }
 
     if (userId) {
-      // 2. Insert or Update Profile row directly in Supabase PostgreSQL
+      // 2. Direct PostgreSQL insertion into profiles (Immutable profile details locked at registration)
       const { error: profError } = await adminSupabase.from('profiles').upsert({
         id: userId,
         full_name: fullName,
@@ -66,10 +82,10 @@ export async function POST(req: Request) {
       });
 
       if (profError) {
-        console.error('API Signup Error updating profiles:', profError);
+        console.error('Error inserting into profiles table:', profError);
       }
 
-      // 3. Insert Subscription row directly in Supabase PostgreSQL
+      // 3. Direct PostgreSQL insertion into subscriptions (Default 20-meal plan)
       const { data: existingSub } = await adminSupabase
         .from('subscriptions')
         .select('id')
@@ -87,7 +103,7 @@ export async function POST(req: Request) {
         });
       }
 
-      // 4. Insert Meal Preferences directly in Supabase PostgreSQL
+      // 4. Direct PostgreSQL insertion into meal_preferences
       const { data: existingPref } = await adminSupabase
         .from('meal_preferences')
         .select('id')
@@ -102,7 +118,7 @@ export async function POST(req: Request) {
         });
       }
 
-      // 5. Insert Welcome Notification directly in Supabase PostgreSQL
+      // 5. Direct PostgreSQL insertion into notifications
       const { data: existingNotif } = await adminSupabase
         .from('notifications')
         .select('id')

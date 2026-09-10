@@ -1,50 +1,27 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Toast } from '@/components/Toast';
-import { User, Mail, Phone, MapPin, Save, ShieldCheck, Calendar, Sparkles } from 'lucide-react';
+import { User, Mail, Phone, MapPin, ShieldCheck, Lock, CheckCircle } from 'lucide-react';
 
 export default function CustomerProfilePage() {
-  const { user, updateProfile } = useAuth();
-
-  const [fullName, setFullName] = useState(user?.full_name || '');
-  const [phone, setPhone] = useState(user?.phone || '');
-  const [address, setAddress] = useState(user?.address || '');
-
-  const [isSaving, setIsSaving] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (user) {
-      setFullName(user.full_name || '');
-      setPhone(user.phone || '');
-      setAddress(user.address || '');
-    }
-  }, [user]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    await updateProfile({
-      full_name: fullName,
-      phone,
-      address,
-    });
-    setIsSaving(false);
-    setToastMessage('Your profile information has been saved successfully!');
-  };
+  const { user } = useAuth();
 
   const initial = user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'U';
 
   return (
     <div className="space-y-8 pb-12 max-w-4xl">
       <div>
-        <h1 className="text-3xl font-extrabold font-heading text-salad-dark">
-          My Profile
-        </h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-3xl font-extrabold font-heading text-salad-dark">
+            My Profile
+          </h1>
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
+            <Lock className="w-3.5 h-3.5" /> Read-Only Credentials
+          </span>
+        </div>
         <p className="text-xs text-gray-500 mt-1">
-          View and manage your account credentials and doorstep delivery address in Baner, Pune.
+          Your registered customer credentials and doorstep delivery address in Baner, Pune.
         </p>
       </div>
 
@@ -86,31 +63,36 @@ export default function CustomerProfilePage() {
         </div>
       </div>
 
-      {/* EDITABLE PROFILE FORM */}
+      {/* READ-ONLY PROFILE DATA */}
       <div className="p-8 rounded-3xl bg-white border border-salad-leaf/10 shadow-soft-sm space-y-6">
         <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-          <h3 className="text-xl font-bold font-heading text-salad-dark">
-            Account Details & Delivery Address
-          </h3>
+          <div>
+            <h3 className="text-xl font-bold font-heading text-salad-dark flex items-center gap-2">
+              <span>Account Credentials & Address</span>
+              <Lock className="w-4 h-4 text-amber-600" />
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Stored in Supabase database upon signup. Profile details cannot be modified after registration.
+            </p>
+          </div>
           <span className="text-xs font-semibold text-salad-leaf flex items-center gap-1">
-            <ShieldCheck className="w-4 h-4" /> Live Supabase Synced
+            <ShieldCheck className="w-4 h-4" /> Locked Record
           </span>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <label className="block text-xs font-bold text-salad-dark mb-1.5 uppercase">
-                Full Name
+                Full Name (Registered)
               </label>
               <div className="relative">
                 <User className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" />
                 <input
                   type="text"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-salad-surface border border-gray-200 text-sm text-salad-dark focus:outline-none focus:ring-2 focus:ring-salad-primary"
+                  disabled
+                  value={user?.full_name || ''}
+                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-gray-100 border border-gray-200 text-sm text-gray-700 cursor-not-allowed font-medium"
                 />
               </div>
             </div>
@@ -125,7 +107,7 @@ export default function CustomerProfilePage() {
                   type="email"
                   disabled
                   value={user?.email || ''}
-                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-gray-100 border border-gray-200 text-sm text-gray-500 cursor-not-allowed font-medium"
+                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-gray-100 border border-gray-200 text-sm text-gray-700 cursor-not-allowed font-medium"
                 />
               </div>
             </div>
@@ -133,52 +115,42 @@ export default function CustomerProfilePage() {
 
           <div>
             <label className="block text-xs font-bold text-salad-dark mb-1.5 uppercase">
-              Phone Number
+              Registered Phone Number
             </label>
             <div className="relative">
               <Phone className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" />
               <input
                 type="tel"
-                placeholder="+91 98765 43210"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-salad-surface border border-gray-200 text-sm text-salad-dark focus:outline-none focus:ring-2 focus:ring-salad-primary"
+                disabled
+                value={user?.phone || 'Not provided'}
+                className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-gray-100 border border-gray-200 text-sm text-gray-700 cursor-not-allowed font-medium"
               />
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-salad-dark mb-1.5 uppercase">
-              Baner Delivery Address
+              Registered Baner Delivery Address
             </label>
             <div className="relative">
               <MapPin className="w-4 h-4 text-gray-400 absolute left-4 top-4" />
               <textarea
                 rows={3}
-                placeholder="Flat / Building, Street / Landmark, Baner, Pune - 411045"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-salad-surface border border-gray-200 text-sm text-salad-dark focus:outline-none focus:ring-2 focus:ring-salad-primary resize-none"
+                disabled
+                value={user?.address || 'Baner, Pune'}
+                className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-gray-100 border border-gray-200 text-sm text-gray-700 cursor-not-allowed font-medium resize-none"
               />
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="w-full py-4 rounded-2xl bg-salad-primary hover:bg-salad-dark text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" />
-            <span>{isSaving ? 'Saving Changes...' : 'Save Profile Changes'}</span>
-          </button>
-        </form>
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-3 text-xs text-amber-900">
+            <Lock className="w-4 h-4 text-amber-700 mt-0.5 flex-shrink-0" />
+            <div>
+              <span className="font-bold">Profile Details Locked:</span> Your customer registration credentials and doorstep delivery address are permanently linked to your 20-meal subscription in Supabase to ensure accurate cloud kitchen fulfillment in Baner, Pune.
+            </div>
+          </div>
+        </div>
       </div>
-
-      <Toast
-        message={toastMessage}
-        type="success"
-        onClose={() => setToastMessage(null)}
-      />
     </div>
   );
 }

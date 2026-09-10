@@ -268,15 +268,12 @@ ALTER TABLE public.meal_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
 
--- Profiles: Customers can read/insert/update their own profile
+-- Profiles: Customers can read and insert their profile upon signup. Updates are locked.
 CREATE POLICY "Users can read own profile" ON public.profiles
   FOR SELECT USING (auth.uid() = id);
 
 CREATE POLICY "Users can insert own profile" ON public.profiles
   FOR INSERT WITH CHECK (auth.uid() = id);
-
-CREATE POLICY "Users can update own profile" ON public.profiles
-  FOR UPDATE USING (auth.uid() = id);
 
 -- Categories & Products: Public read
 CREATE POLICY "Public read active categories" ON public.categories
