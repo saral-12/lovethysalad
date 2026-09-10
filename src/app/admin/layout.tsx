@@ -24,17 +24,43 @@ import {
   Sun,
   Moon,
   Trees,
+  Calendar,
+  Clock,
 } from 'lucide-react';
 import { AdminTheme } from '@/context/AdminAuthContext';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { adminUser, adminLogout, notifications, isLoading, theme, setTheme } = useAdminAuth();
+  const { adminUser, adminLogout, notifications, isLoading, theme, setTheme, refreshAdminData } = useAdminAuth();
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState<Date | null>(null);
+
+  // Live ticking date and time ticker
+  React.useEffect(() => {
+    setCurrentDateTime(new Date());
+    const interval = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Daily refresh effect: auto-refresh operational metrics on midnight date transition
+  const lastDateRef = React.useRef<string>('');
+  React.useEffect(() => {
+    lastDateRef.current = new Date().toISOString().split('T')[0];
+    const dailyCheck = setInterval(() => {
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (lastDateRef.current && lastDateRef.current !== todayStr) {
+        lastDateRef.current = todayStr;
+        refreshAdminData();
+      }
+    }, 10000);
+    return () => clearInterval(dailyCheck);
+  }, [refreshAdminData]);
 
   // If page is /admin/login, render without sidebar/layout wrapper
   if (pathname === '/admin/login') {
@@ -107,6 +133,37 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </span>
             </div>
           </Link>
+        </div>
+
+        {/* LIVE REAL-TIME DATE & TIME DISPLAY */}
+        <div className="hidden md:flex items-center gap-2.5 px-4 py-1.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 text-xs shadow-inner">
+          <div className="flex items-center gap-1.5 text-emerald-400 font-extrabold">
+            <Calendar className="w-3.5 h-3.5" />
+            <span>
+              {currentDateTime
+                ? currentDateTime.toLocaleDateString('en-IN', {
+                    weekday: 'short',
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                  })
+                : 'Loading date...'}
+            </span>
+          </div>
+          <span className="text-slate-600 font-bold">|</span>
+          <div className="flex items-center gap-1.5 text-amber-300 font-bold font-mono">
+            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            <span>
+              {currentDateTime
+                ? currentDateTime.toLocaleTimeString('en-IN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true,
+                  })
+                : ''}
+            </span>
+          </div>
         </div>
 
         {/* HEADER ACTIONS */}
