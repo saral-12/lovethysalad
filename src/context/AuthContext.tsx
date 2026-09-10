@@ -93,6 +93,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     initAuth();
+
+    // Listen for auth state changes
+    if (isSupabaseConfigured) {
+      const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+            await loadSupabaseUserData(session.user.id);
+          } else if (event === 'SIGNED_OUT') {
+            loadStoredUserData();
+          }
+        }
+      );
+
+      return () => {
+        authListener.unsubscribe();
+      };
+    }
   }, []);
 
   function loadStoredUserData() {
@@ -150,31 +167,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   async function loadSupabaseUserData(userId: string) {
     try {
-      // Fetch Profile
+      // 1. Fetch or create Profile in Supabase
+      let userProf: Profile | null = null;
       const { data: prof } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+
       if (prof) {
-        setUser(prof as Profile);
+        userProf = prof as Profile;
       } else {
         const { data: { user: authUser } } = await supabase.auth.getUser();
         if (authUser) {
-          const fallbackProfile: Profile = {
+          const newProfData: Profile = {
             id: authUser.id,
             full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Customer',
             email: authUser.email || '',
             phone: authUser.user_metadata?.phone || '',
             address: authUser.user_metadata?.address || '',
             role: 'customer',
-            created_at: authUser.created_at,
+            created_at: authUser.created_at || new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
-          setUser(fallbackProfile);
+          const { data: insertedProf } = await supabase
+            .from('profiles')
+            .upsert(newProfData)
+            .select()
+            .single();
 
-          // Save to profiles table
-          await supabase.from('profiles').upsert(fallbackProfile);
+          userProf = (insertedProf as Profile) || newProfData;
         }
       }
+      if (userProf) setUser(userProf);
 
-      // Fetch Active Subscription
+      // 2. Fetch or create Active Subscription in Supabase
+      let userSub: Subscription | null = null;
       const { data: subs } = await supabase
         .from('subscriptions')
         .select('*')
@@ -183,37 +207,93 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .limit(1);
 
       if (subs && subs.length > 0) {
-        setSubscription(subs[0] as Subscription);
-      }
+        userSub = subs[0] as Subscription;
+      } else {
+        const defaultSub = {
+          user_id: userId,
+          total_meals: 20,
+          meals_delivered: 0,
+          meals_remaining: 20,
+          status: 'active',
+          start_date: new Date().toISOString().split('T')[0],
+        };
+        const { data: createdSub } = await supabase
+          .from('subscriptions')
+          .insert(defaultSub)
+          .select()
+          .single();
 
-      // Fetch Deliveries
+        if (createdSub) userSub = createdSub as Subscription;
+      }
+      if (userSub) setSubscription(userSub);
+
+      // 3. Fetch Deliveries
       const { data: delivs } = await supabase
         .from('deliveries')
         .select('*, product:products(*)')
         .eq('user_id', userId)
         .order('delivery_date', { ascending: false });
 
-      if (delivs) setDeliveries(delivs as Delivery[]);
+      const userDelivs = delivs ? (delivs as Delivery[]) : [];
+      setDeliveries(userDelivs);
 
-      // Fetch Preferences
+      // 4. Fetch or create Meal Preferences in Supabase
+      let userPrefs: MealPreference | null = null;
       const { data: prefs } = await supabase
         .from('meal_preferences')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (prefs) setPreferences(prefs as MealPreference);
+      if (prefs) {
+        userPrefs = prefs as MealPreference;
+      } else {
+        const defaultPref = {
+          user_id: userId,
+          dietary_preferences: 'Balanced Healthy',
+          spice_preference: 'Medium',
+        };
+        const { data: createdPref } = await supabase
+          .from('meal_preferences')
+          .insert(defaultPref)
+          .select()
+          .single();
 
-      // Fetch Notifications
+        if (createdPref) userPrefs = createdPref as MealPreference;
+      }
+      if (userPrefs) setPreferences(userPrefs);
+
+      // 5. Fetch or create Notifications in Supabase
+      let userNotifs: NotificationItem[] = [];
       const { data: notifs } = await supabase
         .from('notifications')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
-      if (notifs) setNotifications(notifs as NotificationItem[]);
+      if (notifs && notifs.length > 0) {
+        userNotifs = notifs as NotificationItem[];
+      } else {
+        const defaultNotif = {
+          user_id: userId,
+          title: 'Welcome to Love Thy Salad! 🌿',
+          message: 'Your 20-meal subscription has been activated. Enjoy fresh healthy meals in Baner, Pune.',
+          type: 'success',
+        };
+        const { data: createdNotif } = await supabase
+          .from('notifications')
+          .insert(defaultNotif)
+          .select()
+          .single();
+
+        if (createdNotif) userNotifs = [createdNotif as NotificationItem];
+      }
+      setNotifications(userNotifs);
+
+      // Save to local storage as fallback cache
+      saveLocalState(userProf, userSub, userDelivs, userPrefs, userNotifs);
     } catch (err) {
-      console.error('Error fetching Supabase user data:', err);
+      console.error('Error fetching/saving Supabase user data:', err);
     }
   }
 
