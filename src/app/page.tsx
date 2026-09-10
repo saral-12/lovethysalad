@@ -418,35 +418,35 @@ export default function HomePage() {
               </div>
 
               <div className="lg:col-span-5">
-                <div className="glass-card p-8 rounded-3xl border border-white/20 bg-white/10 text-white space-y-6">
+                <div className="p-8 rounded-3xl bg-white border border-salad-leaf/20 shadow-2xl text-salad-dark space-y-6">
                   <div className="text-center space-y-2">
-                    <span className="text-6xl font-extrabold font-heading text-salad-fresh block">
+                    <span className="text-6xl font-extrabold font-heading text-salad-dark block">
                       20
                     </span>
-                    <span className="text-xs uppercase font-bold tracking-widest text-gray-300">
+                    <span className="text-xs uppercase font-extrabold tracking-widest text-salad-dark block">
                       Total Meal Deliveries
                     </span>
                   </div>
 
-                  <div className="h-px bg-white/15" />
+                  <div className="h-px bg-salad-leaf/20" />
 
                   <div className="space-y-4 text-sm">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Tracking System:</span>
-                      <span className="font-bold text-white">Meal Balance (Not Days)</span>
+                      <span className="text-salad-dark font-bold">Tracking System:</span>
+                      <span className="font-extrabold text-salad-dark">Meal Balance (Not Days)</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Delivery Area:</span>
-                      <span className="font-bold text-white">Baner & Nearby Pune</span>
+                      <span className="text-salad-dark font-bold">Delivery Area:</span>
+                      <span className="font-extrabold text-salad-dark">Baner & Nearby Pune</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Kitchen Type:</span>
-                      <span className="font-bold text-salad-fresh">Doorstep Cloud Kitchen</span>
+                      <span className="text-salad-dark font-bold">Kitchen Type:</span>
+                      <span className="font-extrabold text-salad-dark">Doorstep Cloud Kitchen</span>
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-black/30 text-center border border-white/10">
-                    <p className="text-xs text-gray-300">
+                  <div className="p-4 rounded-2xl bg-salad-beige border border-salad-leaf/30 text-center shadow-inner">
+                    <p className="text-xs sm:text-sm font-extrabold text-salad-dark tracking-wide">
                       "20 MEALS ──────── Your healthy journey starts here"
                     </p>
                   </div>
