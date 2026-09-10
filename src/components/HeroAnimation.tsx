@@ -80,11 +80,20 @@ export const HeroAnimation = () => {
           y: { duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 },
           rotate: { duration: 6, repeat: Infinity, ease: 'easeInOut' },
         }}
-        className="absolute top-4 -right-2 z-30 w-28 h-28 rounded-2xl p-2 shadow-xl glass-card border border-white/80 flex flex-col items-center justify-center text-center"
+        className="absolute top-4 -right-2 z-30 w-28 h-28 rounded-2xl overflow-hidden shadow-xl glass-card border border-white/80 flex flex-col items-center justify-between text-center group cursor-pointer"
       >
-        <span className="text-3xl mb-1">🥤</span>
-        <span className="text-[10px] font-bold text-salad-dark uppercase tracking-wider">Detox Juice</span>
-        <span className="text-[9px] text-salad-leaf font-medium">100% Raw</span>
+        <div className="relative w-full h-16 overflow-hidden">
+          <img
+            src="/images/cold_pressed_juices.jpg"
+            alt="Cold Pressed Juices"
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+        </div>
+        <div className="pb-1.5 px-1">
+          <span className="text-[10px] font-bold text-salad-dark block uppercase tracking-wider">Cold Juices</span>
+          <span className="text-[9px] text-salad-leaf font-bold block">100% Raw</span>
+        </div>
       </motion.div>
 
       {/* FLOATING FOOD ELEMENT 3: Smoothie Jar (Bottom Left) */}
