@@ -369,6 +369,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     address: string
   ) => {
     if (isSupabaseConfigured) {
+      try {
+        const apiRes = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fullName, email, phone, password, address }),
+        });
+
+        const apiData = await apiRes.json();
+        if (!apiRes.ok || !apiData.success) {
+          if (apiData?.error && !apiData.error.toLowerCase().includes('already registered')) {
+            return { success: false, error: apiData.error };
+          }
+        }
+
+        // Sign in immediately to establish user session
+        const loginRes = await login(email, password);
+        if (loginRes.success) {
+          return { success: true };
+        }
+
+        if (apiData?.userId) {
+          await loadSupabaseUserData(apiData.userId);
+          return { success: true };
+        }
+      } catch (err: any) {
+        console.error('API signup call error, falling back to SDK:', err);
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -381,100 +409,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       });
 
-      if (error) {
-        if (error.message.toLowerCase().includes('rate limit') || error.message.toLowerCase().includes('rate_limit')) {
-          console.warn('Supabase email rate limit encountered. Attempting direct sign-in/fallback session.');
-          // Try to sign in directly in case user was already created
-          const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
-          if (signInData?.user) {
-            await loadSupabaseUserData(signInData.user.id);
-            return { success: true };
-          }
-        } else {
-          return { success: false, error: error.message };
-        }
+      if (error && !error.message.toLowerCase().includes('rate limit')) {
+        return { success: false, error: error.message };
       }
 
       if (data?.user) {
-        // Attempt immediate sign-in to get active session token if email confirmation is disabled
-        if (!data.session) {
-          try {
-            const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
-            if (signInData?.session) {
-              data.session = signInData.session;
-            }
-          } catch (e) {
-            console.log('Immediate sign-in attempt post-signup:', e);
-          }
-        }
-
-        // If authenticated session exists, explicitly save all customer rows to Supabase PostgreSQL
-        if (data.session) {
-          try {
-            // 1. Profile
-            await supabase.from('profiles').upsert({
-              id: data.user.id,
-              full_name: fullName,
-              email,
-              phone,
-              address,
-              role: 'customer',
-              updated_at: new Date().toISOString(),
-            });
-
-            // 2. Subscription
-            const { data: existingSub } = await supabase
-              .from('subscriptions')
-              .select('id')
-              .eq('user_id', data.user.id)
-              .maybeSingle();
-
-            if (!existingSub) {
-              await supabase.from('subscriptions').insert({
-                user_id: data.user.id,
-                total_meals: 20,
-                meals_delivered: 0,
-                meals_remaining: 20,
-                status: 'active',
-                start_date: new Date().toISOString().split('T')[0],
-              });
-            }
-
-            // 3. Meal Preferences
-            const { data: existingPref } = await supabase
-              .from('meal_preferences')
-              .select('id')
-              .eq('user_id', data.user.id)
-              .maybeSingle();
-
-            if (!existingPref) {
-              await supabase.from('meal_preferences').insert({
-                user_id: data.user.id,
-                dietary_preferences: 'Balanced Healthy',
-                spice_preference: 'Medium',
-              });
-            }
-
-            // 4. Notifications
-            const { data: existingNotif } = await supabase
-              .from('notifications')
-              .select('id')
-              .eq('user_id', data.user.id)
-              .maybeSingle();
-
-            if (!existingNotif) {
-              await supabase.from('notifications').insert({
-                user_id: data.user.id,
-                title: 'Welcome to Love Thy Salad! 🌿',
-                message: 'Your 20-meal subscription has been activated. Enjoy fresh healthy meals in Baner, Pune.',
-                type: 'success',
-              });
-            }
-          } catch (err) {
-            console.error('Error saving post-signup rows to Supabase:', err);
-          }
-        }
-
         await loadSupabaseUserData(data.user.id);
         return { success: true };
       }
