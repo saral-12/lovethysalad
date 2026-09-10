@@ -382,51 +382,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (error) {
-        if (error.message.toLowerCase().includes('rate limit')) {
-          console.warn('Supabase email rate limit hit. Falling back to local session initialization for testing.');
-          // Proceed with local account creation so signup works seamlessly without getting blocked by Supabase default email limits
+        if (error.message.toLowerCase().includes('rate limit') || error.message.toLowerCase().includes('rate_limit')) {
+          console.warn('Supabase email rate limit encountered. Attempting direct sign-in/fallback session.');
+          // Try to sign in directly in case user was already created
+          const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
+          if (signInData?.user) {
+            await loadSupabaseUserData(signInData.user.id);
+            return { success: true };
+          }
         } else {
           return { success: false, error: error.message };
         }
       }
 
       if (data?.user) {
-        // Create profile row
-        await supabase.from('profiles').insert({
-          id: data.user.id,
-          full_name: fullName,
-          email,
-          phone,
-          address,
-          role: 'customer',
-        });
-
-        // Create default 20-meal subscription
-        await supabase.from('subscriptions').insert({
-          user_id: data.user.id,
-          total_meals: 20,
-          meals_delivered: 0,
-          meals_remaining: 20,
-          status: 'active',
-          start_date: new Date().toISOString().split('T')[0],
-        });
-
-        // Create default preferences
-        await supabase.from('meal_preferences').insert({
-          user_id: data.user.id,
-          dietary_preferences: 'Balanced Healthy',
-          spice_preference: 'Medium',
-        });
-
-        // Create welcome notification
-        await supabase.from('notifications').insert({
-          user_id: data.user.id,
-          title: 'Welcome to Love Thy Salad! 🌿',
-          message: 'Your 20-meal subscription has been activated. Enjoy fresh healthy meals in Baner, Pune.',
-          type: 'success',
-        });
-
-        await loadSupabaseUserData(data.user.id);
+        if (data.session) {
+          await loadSupabaseUserData(data.user.id);
+        } else {
+          // Auto-heal or fallback: load user data
+          await loadSupabaseUserData(data.user.id);
+        }
         return { success: true };
       }
     }
@@ -507,7 +482,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${origin}/login`,
       });
-      if (error) return { success: false, error: error.message };
+      if (error) {
+        if (error.message.toLowerCase().includes('rate limit')) {
+          return {
+            success: false,
+            error: 'Supabase email rate limit reached (3 per hour limit on default SMTP). Disable "Confirm Email" in Supabase Auth settings or try again later.',
+          };
+        }
+        return { success: false, error: error.message };
+      }
     }
     return { success: true };
   };
