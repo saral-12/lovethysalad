@@ -20,15 +20,21 @@ import {
   Salad,
   ChevronRight,
   Shield,
+  Palette,
+  Sun,
+  Moon,
+  Trees,
 } from 'lucide-react';
+import { AdminTheme } from '@/context/AdminAuthContext';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { adminUser, adminLogout, notifications, isLoading } = useAdminAuth();
+  const { adminUser, adminLogout, notifications, isLoading, theme, setTheme } = useAdminAuth();
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
 
   // If page is /admin/login, render without sidebar/layout wrapper
   if (pathname === '/admin/login') {
@@ -104,11 +110,91 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* HEADER ACTIONS */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
+          {/* Theme Selector Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setShowThemeMenu(!showThemeMenu);
+                setShowNotifMenu(false);
+              }}
+              title="Change Admin Portal Theme"
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all flex items-center gap-1.5"
+            >
+              {theme === 'light' ? (
+                <Sun className="w-5 h-5 text-amber-400" />
+              ) : theme === 'forest' ? (
+                <Trees className="w-5 h-5 text-emerald-400" />
+              ) : (
+                <Moon className="w-5 h-5 text-indigo-400" />
+              )}
+            </button>
+
+            {showThemeMenu && (
+              <div className="absolute right-0 mt-3 w-56 bg-slate-900 border border-slate-700 shadow-2xl rounded-2xl p-3 z-50 space-y-2">
+                <span className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 block px-2">
+                  Portal Color Theme
+                </span>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => {
+                      setTheme('dark');
+                      setShowThemeMenu(false);
+                    }}
+                    className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all ${
+                      theme === 'dark' ? 'bg-emerald-500 text-slate-950 font-extrabold' : 'text-slate-200 hover:bg-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Moon className="w-4 h-4 text-indigo-400" />
+                      <span>Dark Slate Theme</span>
+                    </div>
+                    {theme === 'dark' && <span>✓</span>}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setTheme('light');
+                      setShowThemeMenu(false);
+                    }}
+                    className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all ${
+                      theme === 'light' ? 'bg-emerald-500 text-slate-950 font-extrabold' : 'text-slate-200 hover:bg-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Sun className="w-4 h-4 text-amber-400" />
+                      <span>Executive Light</span>
+                    </div>
+                    {theme === 'light' && <span>✓</span>}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setTheme('forest');
+                      setShowThemeMenu(false);
+                    }}
+                    className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all ${
+                      theme === 'forest' ? 'bg-emerald-500 text-slate-950 font-extrabold' : 'text-slate-200 hover:bg-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Trees className="w-4 h-4 text-emerald-400" />
+                      <span>Midnight Forest</span>
+                    </div>
+                    {theme === 'forest' && <span>✓</span>}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Notifications Bell */}
           <div className="relative">
             <button
-              onClick={() => setShowNotifMenu(!showNotifMenu)}
+              onClick={() => {
+                setShowNotifMenu(!showNotifMenu);
+                setShowThemeMenu(false);
+              }}
               className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white relative transition-all"
             >
               <Bell className="w-5 h-5" />

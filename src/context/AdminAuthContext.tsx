@@ -19,6 +19,8 @@ export interface CustomerWithData extends Profile {
   preference?: MealPreference | null;
 }
 
+export type AdminTheme = 'dark' | 'light' | 'forest';
+
 interface AdminAuthContextType {
   adminUser: Profile | null;
   customers: CustomerWithData[];
@@ -28,6 +30,8 @@ interface AdminAuthContextType {
   categories: Category[];
   notifications: NotificationItem[];
   messages: ContactMessage[];
+  theme: AdminTheme;
+  setTheme: (t: AdminTheme) => void;
   isLoading: boolean;
   adminLogin: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
   adminLogout: () => Promise<void>;
@@ -55,6 +59,7 @@ interface AdminAuthContextType {
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
 const ADMIN_STORAGE_KEY = 'love_thy_salad_admin_session';
+const ADMIN_THEME_KEY = 'love_thy_salad_admin_theme';
 
 export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const [adminUser, setAdminUser] = useState<Profile | null>(null);
@@ -65,7 +70,29 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const [categories, setCategories] = useState<Category[]>(SEED_CATEGORIES);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [theme, setThemeState] = useState<AdminTheme>('dark');
   const [isLoading, setIsLoading] = useState(true);
+
+  // Initialize stored theme
+  useEffect(() => {
+    try {
+      const storedTheme = localStorage.getItem(ADMIN_THEME_KEY) as AdminTheme;
+      if (storedTheme && ['dark', 'light', 'forest'].includes(storedTheme)) {
+        setThemeState(storedTheme);
+      }
+    } catch (e) {
+      console.warn('Storage error:', e);
+    }
+  }, []);
+
+  const setTheme = (newTheme: AdminTheme) => {
+    setThemeState(newTheme);
+    try {
+      localStorage.setItem(ADMIN_THEME_KEY, newTheme);
+    } catch (e) {
+      console.warn('Storage error:', e);
+    }
+  };
 
   const refreshAdminData = useCallback(async () => {
     try {
@@ -512,6 +539,8 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         categories,
         notifications,
         messages,
+        theme,
+        setTheme,
         isLoading,
         adminLogin,
         adminLogout,

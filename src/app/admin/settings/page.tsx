@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
-import { Settings, ShieldCheck, Save, Building, Bell, CreditCard } from 'lucide-react';
+import { Settings, ShieldCheck, Save, Building, Bell, CreditCard, Palette, Sun, Moon, Trees } from 'lucide-react';
 
 export default function AdminSettingsPage() {
-  const { adminUser } = useAdminAuth();
+  const { adminUser, theme, setTheme } = useAdminAuth();
 
   const [threshold, setThreshold] = useState(5);
   const [defaultMeals, setDefaultMeals] = useState(20);
@@ -73,6 +73,57 @@ export default function AdminSettingsPage() {
                 Full Database & Service Role Management Access
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* THEME PREFERENCE CARD (COL 6) */}
+        <div className="lg:col-span-6 p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+            <h2 className="text-lg font-extrabold font-heading text-white flex items-center gap-2">
+              <Palette className="w-5 h-5 text-emerald-400" />
+              <span>Admin Portal Theme</span>
+            </h2>
+            <span className="text-xs text-emerald-400 font-bold uppercase">
+              Current: {theme}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button
+              onClick={() => setTheme('dark')}
+              className={`p-4 rounded-2xl border text-center space-y-2 transition-all ${
+                theme === 'dark'
+                  ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-extrabold shadow-lg'
+                  : 'bg-slate-800 text-slate-200 border-slate-700 hover:border-slate-600'
+              }`}
+            >
+              <Moon className="w-6 h-6 mx-auto text-indigo-400" />
+              <div className="text-xs font-bold">Dark Slate</div>
+            </button>
+
+            <button
+              onClick={() => setTheme('light')}
+              className={`p-4 rounded-2xl border text-center space-y-2 transition-all ${
+                theme === 'light'
+                  ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-extrabold shadow-lg'
+                  : 'bg-slate-800 text-slate-200 border-slate-700 hover:border-slate-600'
+              }`}
+            >
+              <Sun className="w-6 h-6 mx-auto text-amber-400" />
+              <div className="text-xs font-bold">Executive Light</div>
+            </button>
+
+            <button
+              onClick={() => setTheme('forest')}
+              className={`p-4 rounded-2xl border text-center space-y-2 transition-all ${
+                theme === 'forest'
+                  ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-extrabold shadow-lg'
+                  : 'bg-slate-800 text-slate-200 border-slate-700 hover:border-slate-600'
+              }`}
+            >
+              <Trees className="w-6 h-6 mx-auto text-emerald-400" />
+              <div className="text-xs font-bold">Midnight Forest</div>
+            </button>
           </div>
         </div>
 
