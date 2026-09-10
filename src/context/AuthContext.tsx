@@ -159,8 +159,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   async function loadSupabaseUserData(userId: string) {
     try {
       // Fetch Profile
-      const { data: prof } = await supabase.from('profiles').select('*').eq('id', userId).single();
-      if (prof) setUser(prof as Profile);
+      const { data: prof } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+      if (prof) {
+        setUser(prof as Profile);
+      } else {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          const fallbackProfile: Profile = {
+            id: authUser.id,
+            full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Customer',
+            email: authUser.email || '',
+            phone: authUser.user_metadata?.phone || '',
+            address: authUser.user_metadata?.address || '',
+            role: 'customer',
+            created_at: authUser.created_at,
+            updated_at: new Date().toISOString(),
+          };
+          setUser(fallbackProfile);
+
+          // Save to profiles table
+          await supabase.from('profiles').upsert(fallbackProfile);
+        }
+      }
 
       // Fetch Active Subscription
       const { data: subs } = await supabase
