@@ -278,23 +278,32 @@ CREATE POLICY "Users can insert own profile" ON public.profiles
 CREATE POLICY "Users can update own profile" ON public.profiles
   FOR UPDATE USING (auth.uid() = id);
 
--- Categories & Products: Public read for active items
+-- Categories & Products: Public read
 CREATE POLICY "Public read active categories" ON public.categories
-  FOR SELECT USING (active = true);
+  FOR SELECT USING (true);
 
 CREATE POLICY "Public read active products" ON public.products
-  FOR SELECT USING (active = true);
+  FOR SELECT USING (true);
 
--- Subscriptions: User can view and insert their own subscription
+-- Subscriptions: User can view, insert, and update their own subscription
 CREATE POLICY "Users can view own subscriptions" ON public.subscriptions
   FOR SELECT USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can insert own subscription" ON public.subscriptions
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Deliveries: User can view their own deliveries
+CREATE POLICY "Users can update own subscription" ON public.subscriptions
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- Deliveries: User can view, insert, and update their own deliveries
 CREATE POLICY "Users can view own deliveries" ON public.deliveries
   FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own deliveries" ON public.deliveries
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own deliveries" ON public.deliveries
+  FOR UPDATE USING (auth.uid() = user_id);
 
 -- Meal Preferences: User can read/write own preferences
 CREATE POLICY "Users can manage own preferences" ON public.meal_preferences
