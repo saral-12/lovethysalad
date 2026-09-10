@@ -97,36 +97,6 @@ export default function LoginPage() {
               </p>
             </div>
 
-            {/* Quick Demo Credentials Assistant */}
-            <div className="p-4 rounded-2xl bg-salad-surface border border-salad-leaf/20 space-y-2">
-              <span className="text-[11px] font-bold text-salad-leaf uppercase tracking-wider flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-salad-accent" /> Quick Demo Account Access
-              </span>
-              <div className="flex flex-wrap gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => handleDemoLogin('demo@lovethysalad.com')}
-                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-salad-primary hover:text-white text-salad-dark text-xs font-semibold border border-gray-200 shadow-sm transition-all"
-                >
-                  Active Plan (13 Meals Left)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDemoLogin('ananya@example.com')}
-                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-salad-primary hover:text-white text-salad-dark text-xs font-semibold border border-gray-200 shadow-sm transition-all"
-                >
-                  Low Plan (5 Meals Left)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDemoLogin('rohan@example.com')}
-                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-salad-primary hover:text-white text-salad-dark text-xs font-semibold border border-gray-200 shadow-sm transition-all"
-                >
-                  Completed (0 Left)
-                </button>
-              </div>
-            </div>
-
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="block text-xs font-bold text-salad-dark mb-1.5 uppercase">

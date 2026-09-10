@@ -78,14 +78,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (session?.user) {
             await loadSupabaseUserData(session.user.id);
           } else {
-            loadLocalDemoData();
+            loadStoredUserData();
           }
         } catch (err) {
           console.error('Supabase init error, using local state:', err);
-          loadLocalDemoData();
+          loadStoredUserData();
         }
       } else {
-        loadLocalDemoData();
+        loadStoredUserData();
       }
 
       setIsLoading(false);
@@ -94,7 +94,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initAuth();
   }, []);
 
-  function loadLocalDemoData() {
+  function loadStoredUserData() {
     try {
       const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
       const storedSub = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTION);
@@ -104,33 +104,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (storedUser) {
         setUser(JSON.parse(storedUser));
-        setSubscription(storedSub ? JSON.parse(storedSub) : DEMO_SUBSCRIPTION_ACTIVE);
-        setDeliveries(storedDeliveries ? JSON.parse(storedDeliveries) : DEMO_DELIVERIES);
-        setPreferences(storedPrefs ? JSON.parse(storedPrefs) : DEMO_PREFERENCES);
-        setNotifications(storedNotifs ? JSON.parse(storedNotifs) : DEMO_NOTIFICATIONS);
+        setSubscription(storedSub ? JSON.parse(storedSub) : null);
+        setDeliveries(storedDeliveries ? JSON.parse(storedDeliveries) : []);
+        setPreferences(storedPrefs ? JSON.parse(storedPrefs) : null);
+        setNotifications(storedNotifs ? JSON.parse(storedNotifs) : []);
       } else {
-        // Pre-load default demo active customer
-        setUser(DEMO_USER_ACTIVE);
-        setSubscription(DEMO_SUBSCRIPTION_ACTIVE);
-        setDeliveries(DEMO_DELIVERIES);
-        setPreferences(DEMO_PREFERENCES);
-        setNotifications(DEMO_NOTIFICATIONS);
-
-        saveLocalState(
-          DEMO_USER_ACTIVE,
-          DEMO_SUBSCRIPTION_ACTIVE,
-          DEMO_DELIVERIES,
-          DEMO_PREFERENCES,
-          DEMO_NOTIFICATIONS
-        );
+        setUser(null);
+        setSubscription(null);
+        setDeliveries([]);
+        setPreferences(null);
+        setNotifications([]);
       }
     } catch (e) {
-      console.warn('LocalStorage error:', e);
-      setUser(DEMO_USER_ACTIVE);
-      setSubscription(DEMO_SUBSCRIPTION_ACTIVE);
-      setDeliveries(DEMO_DELIVERIES);
-      setPreferences(DEMO_PREFERENCES);
-      setNotifications(DEMO_NOTIFICATIONS);
+      console.warn('Storage error:', e);
+      setUser(null);
+      setSubscription(null);
+      setDeliveries([]);
+      setPreferences(null);
+      setNotifications([]);
     }
   }
 
@@ -235,14 +226,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    // Local authentication & demo user selection logic
+    // Local authentication fallback
     const lowerEmail = email.toLowerCase().trim();
     const newUser: Profile = {
       id: 'u_' + Date.now(),
       full_name: lowerEmail.includes('smiti') ? 'Smiti Khattri' : lowerEmail.split('@')[0],
       email: lowerEmail,
       phone: '+91 98765 43210',
-      address: 'Flat 402, Green Acres, Pancard Club Road, Baner, Pune - 411045',
+      address: 'Baner, Pune',
       role: 'customer',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -252,21 +243,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       id: 'sub_' + Date.now(),
       user_id: newUser.id,
       total_meals: 20,
-      meals_delivered: 7,
-      meals_remaining: 13,
+      meals_delivered: 0,
+      meals_remaining: 20,
       status: 'active',
       start_date: new Date().toISOString().split('T')[0],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
+    const newPref: MealPreference = {
+      id: 'pref_' + Date.now(),
+      user_id: newUser.id,
+      dietary_preferences: 'Balanced Healthy',
+      spice_preference: 'Medium',
+    };
+
+    const newNotifs: NotificationItem[] = [
+      {
+        id: 'notif_' + Date.now(),
+        user_id: newUser.id,
+        title: 'Welcome Back 🌿',
+        message: 'Your 20-meal subscription is active.',
+        type: 'success',
+        read: false,
+        created_at: new Date().toISOString(),
+      },
+    ];
+
     setUser(newUser);
     setSubscription(newSub);
-    setDeliveries(DEMO_DELIVERIES);
-    setPreferences(DEMO_PREFERENCES);
-    setNotifications(DEMO_NOTIFICATIONS);
+    setDeliveries([]);
+    setPreferences(newPref);
+    setNotifications(newNotifs);
 
-    saveLocalState(newUser, newSub, DEMO_DELIVERIES, DEMO_PREFERENCES, DEMO_NOTIFICATIONS);
+    saveLocalState(newUser, newSub, [], newPref, newNotifs);
     return { success: true };
   };
 
