@@ -197,11 +197,11 @@ export default function HomePage() {
                   className="w-full h-[400px] sm:h-[480px] object-cover transform group-hover:scale-105 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-salad-dark/60 via-transparent to-transparent" />
-                <div className="absolute bottom-6 left-6 right-6 p-6 rounded-2xl glass-card border border-white/40">
-                  <p className="text-white text-sm font-semibold italic">
+                <div className="absolute bottom-6 left-6 right-6 p-6 rounded-2xl bg-white/95 backdrop-blur-md border border-salad-leaf/20 shadow-2xl">
+                  <p className="text-salad-dark text-sm sm:text-base font-extrabold italic leading-relaxed">
                     "Every bowl is crafted with love, respect for nature, and a passion for vibrant living."
                   </p>
-                  <span className="block mt-2 text-salad-light text-xs font-bold uppercase tracking-wider">
+                  <span className="block mt-2.5 text-salad-primary text-xs font-extrabold uppercase tracking-wider">
                     — Smiti Olga Khattri (Founder)
                   </span>
                 </div>
