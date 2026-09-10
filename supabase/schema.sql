@@ -269,48 +269,63 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
 
 -- Profiles: Customers can read and insert their profile upon signup. Updates are locked.
+DROP POLICY IF EXISTS "Users can read own profile" ON public.profiles;
 CREATE POLICY "Users can read own profile" ON public.profiles
   FOR SELECT USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile" ON public.profiles
   FOR INSERT WITH CHECK (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+
 -- Categories & Products: Public read
+DROP POLICY IF EXISTS "Public read active categories" ON public.categories;
 CREATE POLICY "Public read active categories" ON public.categories
   FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Public read active products" ON public.products;
 CREATE POLICY "Public read active products" ON public.products
   FOR SELECT USING (true);
 
 -- Subscriptions: User can view, insert, and update their own subscription
+DROP POLICY IF EXISTS "Users can view own subscriptions" ON public.subscriptions;
 CREATE POLICY "Users can view own subscriptions" ON public.subscriptions
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own subscription" ON public.subscriptions;
 CREATE POLICY "Users can insert own subscription" ON public.subscriptions
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own subscription" ON public.subscriptions;
 CREATE POLICY "Users can update own subscription" ON public.subscriptions
   FOR UPDATE USING (auth.uid() = user_id);
 
 -- Deliveries: User can view, insert, and update their own deliveries
+DROP POLICY IF EXISTS "Users can view own deliveries" ON public.deliveries;
 CREATE POLICY "Users can view own deliveries" ON public.deliveries
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own deliveries" ON public.deliveries;
 CREATE POLICY "Users can insert own deliveries" ON public.deliveries
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own deliveries" ON public.deliveries;
 CREATE POLICY "Users can update own deliveries" ON public.deliveries
   FOR UPDATE USING (auth.uid() = user_id);
 
 -- Meal Preferences: User can read/write own preferences
+DROP POLICY IF EXISTS "Users can manage own preferences" ON public.meal_preferences;
 CREATE POLICY "Users can manage own preferences" ON public.meal_preferences
   FOR ALL USING (auth.uid() = user_id);
 
 -- Notifications: User can read/update own notifications
+DROP POLICY IF EXISTS "Users can manage own notifications" ON public.notifications;
 CREATE POLICY "Users can manage own notifications" ON public.notifications
   FOR ALL USING (auth.uid() = user_id);
 
 -- Contact Messages: Anyone can insert a contact message
+DROP POLICY IF EXISTS "Anyone can submit contact message" ON public.contact_messages;
 CREATE POLICY "Anyone can submit contact message" ON public.contact_messages
   FOR INSERT WITH CHECK (true);
 
