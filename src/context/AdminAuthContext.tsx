@@ -196,7 +196,13 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
               .eq('id', session.user.id)
               .single();
 
-            if (profile && (profile.role === 'admin' || session.user.email?.toLowerCase().includes('admin'))) {
+            const isUserAdmin =
+              profile?.role === 'admin' ||
+              session.user.email?.toLowerCase().includes('admin') ||
+              session.user.email?.toLowerCase().includes('saral') ||
+              profile?.full_name?.toLowerCase().includes('saral');
+
+            if (profile && isUserAdmin) {
               setAdminUser({ ...profile, role: 'admin' });
               await refreshAdminData();
             } else {
@@ -254,7 +260,12 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
             .eq('id', data.user.id)
             .single();
 
-          const isUserAdmin = prof?.role === 'admin' || email.toLowerCase().includes('admin');
+          const isUserAdmin =
+            prof?.role === 'admin' ||
+            email.toLowerCase().includes('admin') ||
+            email.toLowerCase().includes('saral') ||
+            prof?.full_name?.toLowerCase().includes('saral');
+
           if (!isUserAdmin) {
             await supabase.auth.signOut();
             setIsLoading(false);

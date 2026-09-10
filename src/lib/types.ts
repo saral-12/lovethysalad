@@ -66,6 +66,8 @@ export interface Delivery {
   subscription_id: string;
   user_id: string;
   user?: Profile;
+  customer?: Profile;
+  delivered_by_profile?: Profile;
   product_id?: string;
   product?: Product;
   delivery_date: string;

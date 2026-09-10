@@ -383,14 +383,15 @@ export default function AdminDashboardPage() {
                 <tbody className="divide-y divide-slate-800">
                   {deliveries.slice(0, 5).map((del) => {
                     const isDelivered = del.status === 'delivered';
+                    const cust = del.customer || del.user;
                     return (
                       <tr key={del.id} className="hover:bg-slate-800/50 transition-colors">
                         <td className="p-3">
                           <div className="font-bold text-white">
-                            {del.user?.full_name || 'Customer'}
+                            {cust?.full_name || 'Customer'}
                           </div>
                           <div className="text-[10px] text-emerald-400 font-bold">
-                            {del.user?.customer_id || 'LTS-01'}
+                            {cust?.customer_id || 'LTS-01'}
                           </div>
                         </td>
                         <td className="p-3 text-slate-200 font-medium">

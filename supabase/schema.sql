@@ -57,6 +57,11 @@ BEGIN
     seq_val := nextval('public.customer_id_seq');
     UPDATE public.profiles SET customer_id = 'LTS-' || LPAD(seq_val::TEXT, 2, '0') WHERE id = r.id;
   END LOOP;
+
+  -- Promote Saral profiles to Admin role automatically
+  UPDATE public.profiles
+  SET role = 'admin'
+  WHERE LOWER(full_name) LIKE '%saral%' OR LOWER(email) LIKE '%saral%';
 END $$;
 
 -- ---------------------------------------------------------

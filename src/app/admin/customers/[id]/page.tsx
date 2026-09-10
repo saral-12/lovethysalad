@@ -28,6 +28,7 @@ export default function AdminCustomerDetailPage() {
 
   const {
     customers,
+    deliveries,
     updateCustomerInfo,
     markDeliveryDelivered,
     createDelivery,
@@ -38,6 +39,11 @@ export default function AdminCustomerDetailPage() {
   const customer = useMemo(() => {
     return customers.find((c) => c.id === customerIdParam);
   }, [customers, customerIdParam]);
+
+  const customerDeliveries = useMemo(() => {
+    if (!customer) return [];
+    return deliveries.filter((d) => d.user_id === customer.id || d.user?.id === customer.id);
+  }, [deliveries, customer]);
 
   // Form states
   const [isEditing, setIsEditing] = useState(false);
@@ -435,6 +441,86 @@ export default function AdminCustomerDetailPage() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* DELIVERY HISTORY TABLE SECTION */}
+      <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl space-y-6">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+          <h2 className="text-lg font-extrabold font-heading text-white flex items-center gap-2">
+            <Truck className="w-5 h-5 text-emerald-400" />
+            <span>Delivery History ({customerDeliveries.length})</span>
+          </h2>
+          <span className="text-xs text-slate-400 font-semibold">
+            Tracked via Doorstep Cloud Kitchen Dispatch
+          </span>
+        </div>
+
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left text-xs text-slate-300">
+            <thead className="bg-slate-800/80 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-700">
+              <tr>
+                <th className="p-3">Delivery Date</th>
+                <th className="p-3">Meal / Product</th>
+                <th className="p-3">Notes</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Delivered Info</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {customerDeliveries.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-6 text-center text-slate-400">
+                    No delivery records found for this customer profile yet.
+                  </td>
+                </tr>
+              ) : (
+                customerDeliveries.map((del) => {
+                  const isDelivered = del.status === 'delivered';
+                  const deliveredBy = del.delivered_by_profile?.full_name || (del.delivered_by ? 'Admin' : null);
+
+                  return (
+                    <tr key={del.id} className="hover:bg-slate-800/50 transition-colors">
+                      <td className="p-3 font-semibold text-white whitespace-nowrap">
+                        {del.delivery_date}
+                      </td>
+                      <td className="p-3 font-bold text-slate-200">
+                        {del.product?.name || 'Avocado Quinoa Power Bowl'}
+                      </td>
+                      <td className="p-3 text-slate-400 italic">
+                        {del.notes || '—'}
+                      </td>
+                      <td className="p-3">
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                            isDelivered
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                              : del.status === 'preparing'
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              : del.status === 'out_for_delivery'
+                              ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                              : 'bg-slate-800 text-slate-400'
+                          }`}
+                        >
+                          {del.status}
+                        </span>
+                      </td>
+                      <td className="p-3 text-slate-400 font-medium text-[11px]">
+                        {isDelivered ? (
+                          <span>
+                            {del.delivered_at && new Date(del.delivered_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {deliveredBy && <span className="ml-1 text-emerald-400">by {deliveredBy}</span>}
+                          </span>
+                        ) : (
+                          'Scheduled'
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

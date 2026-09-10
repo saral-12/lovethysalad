@@ -214,11 +214,11 @@ export default function AdminDeliveriesPage() {
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-800/80 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-700">
               <tr>
-                <th className="p-4">Customer ID & Name</th>
+                <th className="p-4">Delivery ID & Date</th>
+                <th className="p-4">Customer Info</th>
                 <th className="p-4">Meal / Product</th>
                 <th className="p-4">Delivery Address</th>
-                <th className="p-4">Date</th>
-                <th className="p-4">Status</th>
+                <th className="p-4">Status & Dispatcher</th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -233,52 +233,65 @@ export default function AdminDeliveriesPage() {
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-slate-400 space-y-2">
                     <Truck className="w-8 h-8 text-slate-600 mx-auto" />
-                    <p className="font-semibold">No deliveries match your filters.</p>
+                    <p className="semibold">No deliveries match your filters.</p>
                   </td>
                 </tr>
               ) : (
                 filteredDeliveries.map((del) => {
                   const isDelivered = del.status === 'delivered';
-                  const cust = del.user;
+                  const cust = del.customer || del.user;
                   const prod = del.product;
+                  const deliveredBy = del.delivered_by_profile?.full_name || (del.delivered_by ? 'Admin' : null);
 
                   return (
                     <tr key={del.id} className="hover:bg-slate-800/50 transition-colors">
                       <td className="p-4 font-semibold text-white">
+                        <div className="text-xs font-mono text-slate-400">{del.id.substring(0, 8)}...</div>
+                        <div className="text-xs font-bold text-white mt-0.5">{del.delivery_date}</div>
+                      </td>
+                      <td className="p-4 font-semibold text-white">
                         <div className="text-sm font-bold">{cust?.full_name || 'Customer'}</div>
-                        <div className="text-xs text-emerald-400 font-extrabold">{cust?.customer_id || 'LTS-01'}</div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs text-emerald-400 font-extrabold">{cust?.customer_id || 'LTS-01'}</span>
+                          {cust?.phone && <span className="text-[11px] text-slate-400">({cust.phone})</span>}
+                        </div>
                       </td>
                       <td className="p-4 font-bold text-slate-200">
                         <div>{prod?.name || 'Avocado Quinoa Power Bowl'}</div>
                         {del.notes && <div className="text-[10px] text-slate-400 font-normal mt-0.5">Note: {del.notes}</div>}
                       </td>
-                      <td className="p-4 text-slate-300">
+                      <td className="p-4 text-slate-300 max-w-[200px] truncate">
                         {cust?.address || 'Baner, Pune'}
                       </td>
-                      <td className="p-4 text-slate-300 font-medium whitespace-nowrap">
-                        {del.delivery_date}
-                      </td>
                       <td className="p-4">
-                        <select
-                          value={del.status}
-                          disabled={isDelivered}
-                          onChange={(e) => handleStatusChange(del.id, e.target.value)}
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border focus:outline-none ${
-                            isDelivered
-                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 cursor-not-allowed'
-                              : del.status === 'preparing'
-                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                              : del.status === 'out_for_delivery'
-                              ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                              : 'bg-slate-800 text-slate-300 border-slate-700'
-                          }`}
-                        >
-                          <option value="scheduled">Scheduled</option>
-                          <option value="preparing">Preparing</option>
-                          <option value="out_for_delivery">Out for Delivery</option>
-                          <option value="delivered">Delivered</option>
-                          <option value="cancelled">Cancelled</option>
-                        </select>
+                        <div className="space-y-1">
+                          <select
+                            value={del.status}
+                            disabled={isDelivered}
+                            onChange={(e) => handleStatusChange(del.id, e.target.value)}
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border focus:outline-none ${
+                              isDelivered
+                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 cursor-not-allowed'
+                                : del.status === 'preparing'
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                : del.status === 'out_for_delivery'
+                                ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                : 'bg-slate-800 text-slate-300 border-slate-700'
+                            }`}
+                          >
+                            <option value="scheduled">Scheduled</option>
+                            <option value="preparing">Preparing</option>
+                            <option value="out_for_delivery">Out for Delivery</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                          </select>
+                          {isDelivered && (
+                            <div className="text-[10px] text-slate-400 font-semibold">
+                              {del.delivered_at && <span>At: {new Date(del.delivered_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+                              {deliveredBy && <span className="ml-1 text-emerald-400">by {deliveredBy}</span>}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4 text-right">
                         {isDelivered ? (

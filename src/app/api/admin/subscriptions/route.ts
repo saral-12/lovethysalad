@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     const supabase = getAdminClient();
     const { data: subscriptions, error } = await supabase
       .from('subscriptions')
-      .select('*, user:profiles(*)')
+      .select('*, user:profiles!subscriptions_user_id_fkey(*)')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
         start_date: startDate || new Date().toISOString().split('T')[0],
         end_date: endDate || null,
       })
-      .select('*, user:profiles(*)')
+      .select('*, user:profiles!subscriptions_user_id_fkey(*)')
       .single();
 
     if (error) {
@@ -105,7 +105,7 @@ export async function PATCH(req: Request) {
       .from('subscriptions')
       .update(updatePayload)
       .eq('id', subscriptionId)
-      .select('*, user:profiles(*)')
+      .select('*, user:profiles!subscriptions_user_id_fkey(*)')
       .single();
 
     if (updateErr) {

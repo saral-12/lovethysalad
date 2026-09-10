@@ -9,6 +9,17 @@ function getAdminClient() {
   });
 }
 
+// Helper to ensure returned delivery object populates both user and customer properties
+function formatDeliveryRecord(d: any) {
+  if (!d) return null;
+  const customerProfile = d.customer || d.user || null;
+  return {
+    ...d,
+    customer: customerProfile,
+    user: customerProfile,
+  };
+}
+
 // GET /api/admin/deliveries — Fetch all deliveries with customer & product metadata
 export async function GET(req: Request) {
   try {
@@ -17,19 +28,28 @@ export async function GET(req: Request) {
       .from('deliveries')
       .select(`
         *,
-        product:products(*),
-        user:profiles(*)
+        customer:profiles!deliveries_user_id_fkey(*),
+        delivered_by_profile:profiles!deliveries_delivered_by_fkey(*),
+        product:products(*)
       `)
       .order('delivery_date', { ascending: false })
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching admin deliveries:', error);
+      console.error('Admin deliveries query failed (GET):', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, deliveries });
+    const formattedDeliveries = (deliveries || []).map(formatDeliveryRecord);
+
+    return NextResponse.json({ success: true, deliveries: formattedDeliveries });
   } catch (err: any) {
+    console.error('Unhandled server error in GET /api/admin/deliveries:', err);
     return NextResponse.json({ success: false, error: err.message || 'Server error' }, { status: 500 });
   }
 }
@@ -76,15 +96,31 @@ export async function POST(req: Request) {
         status,
         notes: notes || null,
       })
-      .select(`*, product:products(*), user:profiles(*)`)
+      .select(`
+        *,
+        customer:profiles!deliveries_user_id_fkey(*),
+        delivered_by_profile:profiles!deliveries_delivered_by_fkey(*),
+        product:products(*)
+      `)
       .single();
 
     if (insertError) {
+      console.error('Admin delivery insert failed (POST):', {
+        message: insertError.message,
+        code: insertError.code,
+        details: insertError.details,
+        hint: insertError.hint,
+      });
       return NextResponse.json({ success: false, error: insertError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, delivery, message: 'Delivery scheduled successfully.' });
+    return NextResponse.json({
+      success: true,
+      delivery: formatDeliveryRecord(delivery),
+      message: 'Delivery scheduled successfully.',
+    });
   } catch (err: any) {
+    console.error('Unhandled server error in POST /api/admin/deliveries:', err);
     return NextResponse.json({ success: false, error: err.message || 'Server error' }, { status: 500 });
   }
 }
@@ -149,10 +185,21 @@ export async function PATCH(req: Request) {
       .from('deliveries')
       .update(updatePayload)
       .eq('id', deliveryId)
-      .select('*, product:products(*), user:profiles(*)')
+      .select(`
+        *,
+        customer:profiles!deliveries_user_id_fkey(*),
+        delivered_by_profile:profiles!deliveries_delivered_by_fkey(*),
+        product:products(*)
+      `)
       .single();
 
     if (updateErr) {
+      console.error('Admin delivery update failed (PATCH):', {
+        message: updateErr.message,
+        code: updateErr.code,
+        details: updateErr.details,
+        hint: updateErr.hint,
+      });
       return NextResponse.json({ success: false, error: updateErr.message }, { status: 500 });
     }
 
@@ -165,11 +212,12 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json({
       success: true,
-      delivery: updatedDelivery,
+      delivery: formatDeliveryRecord(updatedDelivery),
       subscription: refreshedSub,
       message: status === 'delivered' ? '✓ Delivery marked as delivered. 1 meal deducted.' : `Delivery status updated to ${status}.`,
     });
   } catch (err: any) {
+    console.error('Unhandled server error in PATCH /api/admin/deliveries:', err);
     return NextResponse.json({ success: false, error: err.message || 'Server error' }, { status: 500 });
   }
 }

@@ -230,7 +230,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // 3. Fetch Deliveries
       const { data: delivs } = await supabase
         .from('deliveries')
-        .select('*, product:products(*)')
+        .select('*, product:products(*), user:profiles!deliveries_user_id_fkey(*)')
         .eq('user_id', userId)
         .order('delivery_date', { ascending: false });
 
