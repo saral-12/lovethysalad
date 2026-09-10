@@ -5,7 +5,11 @@ import { useAdminAuth } from '@/context/AdminAuthContext';
 import { Bell, Send, Users, AlertTriangle, CheckCircle2, Sparkles } from 'lucide-react';
 
 export default function AdminNotificationsPage() {
-  const { notifications, customers, sendNotification } = useAdminAuth();
+  const { notifications, customers, sendNotification, markAllNotificationsAsRead } = useAdminAuth();
+
+  React.useEffect(() => {
+    markAllNotificationsAsRead();
+  }, [markAllNotificationsAsRead]);
 
   const [selectedUser, setSelectedUser] = useState('');
   const [title, setTitle] = useState('');

@@ -54,12 +54,15 @@ interface AdminAuthContextType {
   deleteProduct: (productId: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   sendNotification: (userId: string, title: string, message: string, type?: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   toggleMessageStatus: (messageId: string, status: string) => Promise<{ success: boolean; error?: string }>;
+  markNotificationAsRead: (id: string) => void;
+  markAllNotificationsAsRead: () => void;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
 const ADMIN_STORAGE_KEY = 'love_thy_salad_admin_session';
 const ADMIN_THEME_KEY = 'love_thy_salad_admin_theme';
+const ADMIN_READ_NOTIFS_KEY = 'love_thy_salad_admin_read_notifs';
 
 export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const [adminUser, setAdminUser] = useState<Profile | null>(null);
@@ -72,13 +75,18 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [theme, setThemeState] = useState<AdminTheme>('dark');
   const [isLoading, setIsLoading] = useState(true);
+  const [readNotifIds, setReadNotifIds] = useState<string[]>([]);
 
-  // Initialize stored theme
+  // Initialize stored theme & read notifications
   useEffect(() => {
     try {
       const storedTheme = localStorage.getItem(ADMIN_THEME_KEY) as AdminTheme;
       if (storedTheme && ['dark', 'light', 'forest'].includes(storedTheme)) {
         setThemeState(storedTheme);
+      }
+      const cachedRead = localStorage.getItem(ADMIN_READ_NOTIFS_KEY);
+      if (cachedRead) {
+        setReadNotifIds(JSON.parse(cachedRead));
       }
     } catch (e) {
       console.warn('Storage error:', e);
@@ -93,6 +101,38 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       console.warn('Storage error:', e);
     }
   };
+
+  const markNotificationAsRead = useCallback((id: string) => {
+    setReadNotifIds((prev) => {
+      if (prev.includes(id)) return prev;
+      const updated = [...prev, id];
+      try {
+        localStorage.setItem(ADMIN_READ_NOTIFS_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Storage error saving read notif:', e);
+      }
+      return updated;
+    });
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
+  }, []);
+
+  const markAllNotificationsAsRead = useCallback(() => {
+    setNotifications((prev) => {
+      const allIds = prev.map((n) => n.id);
+      setReadNotifIds((existing) => {
+        const merged = Array.from(new Set([...existing, ...allIds]));
+        try {
+          localStorage.setItem(ADMIN_READ_NOTIFS_KEY, JSON.stringify(merged));
+        } catch (e) {
+          console.warn('Storage error saving all read notifs:', e);
+        }
+        return merged;
+      });
+      return prev.map((n) => ({ ...n, read: true }));
+    });
+  }, []);
 
   const refreshAdminData = useCallback(async () => {
     try {
@@ -128,49 +168,58 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Build real-time Admin Notifications stream
-      buildAdminNotifications(custRes?.customers || [], delRes?.deliveries || []);
+      let currentReadIds: string[] = [];
+      try {
+        const cached = localStorage.getItem(ADMIN_READ_NOTIFS_KEY);
+        if (cached) currentReadIds = JSON.parse(cached);
+      } catch (e) {}
+
+      buildAdminNotifications(custRes?.customers || [], delRes?.deliveries || [], currentReadIds);
     } catch (err) {
       console.error('Error refreshing admin data:', err);
     }
   }, []);
 
-  function buildAdminNotifications(custs: CustomerWithData[], dels: Delivery[]) {
+  function buildAdminNotifications(custs: CustomerWithData[], dels: Delivery[], currentReadIds: string[] = readNotifIds) {
     const adminNotifs: NotificationItem[] = [];
 
     // New customers (last 7 days)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     custs.forEach((c) => {
       if (new Date(c.created_at) >= sevenDaysAgo) {
+        const notifId = `notif-new-cust-${c.id}`;
         adminNotifs.push({
-          id: `notif-new-cust-${c.id}`,
+          id: notifId,
           user_id: c.id,
           title: '🌿 New Customer Registered',
           message: `${c.full_name} (${c.customer_id || 'LTS-Customer'}) just created an account.`,
           type: 'success',
-          read: false,
+          read: currentReadIds.includes(notifId),
           created_at: c.created_at,
         });
       }
 
       if (c.subscription) {
         if (c.subscription.meals_remaining <= 5 && c.subscription.meals_remaining > 0) {
+          const notifId = `notif-low-meals-${c.id}`;
           adminNotifs.push({
-            id: `notif-low-meals-${c.id}`,
+            id: notifId,
             user_id: c.id,
             title: '⚠ Low Meals Warning',
             message: `${c.full_name} (${c.customer_id}) has only ${c.subscription.meals_remaining} meals remaining.`,
             type: 'warning',
-            read: false,
+            read: currentReadIds.includes(notifId),
             created_at: c.subscription.updated_at || new Date().toISOString(),
           });
         } else if (c.subscription.meals_remaining === 0 || c.subscription.status === 'completed') {
+          const notifId = `notif-completed-${c.id}`;
           adminNotifs.push({
-            id: `notif-completed-${c.id}`,
+            id: notifId,
             user_id: c.id,
             title: '🎉 Subscription Completed',
             message: `${c.full_name} (${c.customer_id}) has completed their 20-meal subscription.`,
             type: 'info',
-            read: false,
+            read: currentReadIds.includes(notifId),
             created_at: c.subscription.updated_at || new Date().toISOString(),
           });
         }
@@ -567,6 +616,8 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         deleteProduct,
         sendNotification,
         toggleMessageStatus,
+        markNotificationAsRead,
+        markAllNotificationsAsRead,
       }}
     >
       {children}

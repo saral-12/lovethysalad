@@ -32,7 +32,7 @@ import { AdminTheme } from '@/context/AdminAuthContext';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { adminUser, adminLogout, notifications, isLoading, theme, setTheme, refreshAdminData } = useAdminAuth();
+  const { adminUser, adminLogout, notifications, isLoading, theme, setTheme, refreshAdminData, markAllNotificationsAsRead } = useAdminAuth();
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
@@ -249,8 +249,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="relative">
             <button
               onClick={() => {
-                setShowNotifMenu(!showNotifMenu);
+                const nextState = !showNotifMenu;
+                setShowNotifMenu(nextState);
                 setShowThemeMenu(false);
+                if (nextState) {
+                  markAllNotificationsAsRead();
+                }
               }}
               className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white relative transition-all"
             >
