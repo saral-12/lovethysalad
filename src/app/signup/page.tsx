@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Toast } from '@/components/Toast';
+import { TermsModal } from '@/components/TermsModal';
 import { Leaf, Lock, Mail, User, Phone, MapPin, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export default function SignupPage() {
   const router = useRouter();
   const { signup } = useAuth();
 
+  const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -224,7 +226,14 @@ export default function SignupPage() {
                   className="w-4 h-4 rounded text-salad-primary focus:ring-salad-primary border-gray-300"
                 />
                 <label htmlFor="terms" className="text-xs text-gray-600 select-none">
-                  I agree to the <a href="#" className="text-salad-primary font-bold hover:underline">terms and conditions</a>.
+                  I agree to the{' '}
+                  <button
+                    type="button"
+                    onClick={() => setIsTermsOpen(true)}
+                    className="text-salad-primary font-bold hover:underline"
+                  >
+                    terms and conditions
+                  </button>.
                 </label>
               </div>
 
@@ -252,6 +261,12 @@ export default function SignupPage() {
         message={toastMessage}
         type={toastType}
         onClose={() => setToastMessage(null)}
+      />
+
+      <TermsModal
+        isOpen={isTermsOpen}
+        onClose={() => setIsTermsOpen(false)}
+        onAccept={() => setFormData((prev) => ({ ...prev, agreeTerms: true }))}
       />
     </div>
   );
