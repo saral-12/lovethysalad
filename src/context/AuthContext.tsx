@@ -378,44 +378,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         const apiData = await apiRes.json();
         if (!apiRes.ok || !apiData.success) {
-          if (apiData?.error && !apiData.error.toLowerCase().includes('already registered')) {
-            return { success: false, error: apiData.error };
-          }
+          return {
+            success: false,
+            error: apiData?.error || 'Failed to create account. Please try again.',
+          };
         }
 
-        // Sign in immediately to establish user session
+        // Auto sign-in or establish user session
         const loginRes = await login(email, password);
         if (loginRes.success) {
-          return { success: true };
+          return { success: true, message: apiData.message };
         }
 
         if (apiData?.userId) {
           await loadSupabaseUserData(apiData.userId);
-          return { success: true };
+          return { success: true, message: apiData.message };
         }
+
+        return { success: true, message: apiData.message };
       } catch (err: any) {
-        console.error('API signup call error, falling back to SDK:', err);
-      }
-
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            phone,
-            address,
-          },
-        },
-      });
-
-      if (error && !error.message.toLowerCase().includes('rate limit')) {
-        return { success: false, error: error.message };
-      }
-
-      if (data?.user) {
-        await loadSupabaseUserData(data.user.id);
-        return { success: true };
+        console.error('Customer signup API error:', err);
+        return {
+          success: false,
+          error: err.message || 'Network error during registration. Please try again.',
+        };
       }
     }
 

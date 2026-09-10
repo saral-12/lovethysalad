@@ -53,10 +53,14 @@ export default function SignupPage() {
     setIsSubmitting(false);
 
     if (res.success) {
-      router.push('/dashboard');
+      setToastType('success');
+      setToastMessage('Account created successfully! Your 20-meal subscription is active.');
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 800);
     } else {
       setToastType('error');
-      setToastMessage(res.error || 'Failed to create account. Please try again.');
+      setToastMessage(res.error || 'Failed to create account. Please check your details and try again.');
     }
   };
 
