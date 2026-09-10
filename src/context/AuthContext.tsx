@@ -40,6 +40,7 @@ interface AuthContextType {
     address: string
   ) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   updatePreferences: (prefs: Partial<MealPreference>) => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<void>;
   markNotificationRead: (id: string) => Promise<void>;
@@ -420,6 +421,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem(STORAGE_KEYS.NOTIFICATIONS);
   };
 
+  const resetPassword = async (email: string) => {
+    if (isSupabaseConfigured) {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${origin}/login`,
+      });
+      if (error) return { success: false, error: error.message };
+    }
+    return { success: true };
+  };
+
   const updatePreferences = async (updated: Partial<MealPreference>) => {
     if (!user) return;
     const newPrefs = { ...preferences, ...updated, user_id: user.id } as MealPreference;
@@ -509,6 +521,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         signup,
         logout,
+        resetPassword,
         updatePreferences,
         updateProfile,
         markNotificationRead,
