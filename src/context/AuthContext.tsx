@@ -396,12 +396,86 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (data?.user) {
-        if (data.session) {
-          await loadSupabaseUserData(data.user.id);
-        } else {
-          // Auto-heal or fallback: load user data
-          await loadSupabaseUserData(data.user.id);
+        // Attempt immediate sign-in to get active session token if email confirmation is disabled
+        if (!data.session) {
+          try {
+            const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
+            if (signInData?.session) {
+              data.session = signInData.session;
+            }
+          } catch (e) {
+            console.log('Immediate sign-in attempt post-signup:', e);
+          }
         }
+
+        // If authenticated session exists, explicitly save all customer rows to Supabase PostgreSQL
+        if (data.session) {
+          try {
+            // 1. Profile
+            await supabase.from('profiles').upsert({
+              id: data.user.id,
+              full_name: fullName,
+              email,
+              phone,
+              address,
+              role: 'customer',
+              updated_at: new Date().toISOString(),
+            });
+
+            // 2. Subscription
+            const { data: existingSub } = await supabase
+              .from('subscriptions')
+              .select('id')
+              .eq('user_id', data.user.id)
+              .maybeSingle();
+
+            if (!existingSub) {
+              await supabase.from('subscriptions').insert({
+                user_id: data.user.id,
+                total_meals: 20,
+                meals_delivered: 0,
+                meals_remaining: 20,
+                status: 'active',
+                start_date: new Date().toISOString().split('T')[0],
+              });
+            }
+
+            // 3. Meal Preferences
+            const { data: existingPref } = await supabase
+              .from('meal_preferences')
+              .select('id')
+              .eq('user_id', data.user.id)
+              .maybeSingle();
+
+            if (!existingPref) {
+              await supabase.from('meal_preferences').insert({
+                user_id: data.user.id,
+                dietary_preferences: 'Balanced Healthy',
+                spice_preference: 'Medium',
+              });
+            }
+
+            // 4. Notifications
+            const { data: existingNotif } = await supabase
+              .from('notifications')
+              .select('id')
+              .eq('user_id', data.user.id)
+              .maybeSingle();
+
+            if (!existingNotif) {
+              await supabase.from('notifications').insert({
+                user_id: data.user.id,
+                title: 'Welcome to Love Thy Salad! 🌿',
+                message: 'Your 20-meal subscription has been activated. Enjoy fresh healthy meals in Baner, Pune.',
+                type: 'success',
+              });
+            }
+          } catch (err) {
+            console.error('Error saving post-signup rows to Supabase:', err);
+          }
+        }
+
+        await loadSupabaseUserData(data.user.id);
         return { success: true };
       }
     }
