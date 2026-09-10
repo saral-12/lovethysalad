@@ -303,6 +303,17 @@ ALTER TABLE public.meal_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
 
+-- Helper function to check if current authenticated user is an Admin
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Profiles: Customers can read and insert their profile upon signup. Updates are locked.
 DROP POLICY IF EXISTS "Users can read own profile" ON public.profiles;
 CREATE POLICY "Users can read own profile" ON public.profiles
@@ -314,16 +325,28 @@ CREATE POLICY "Users can insert own profile" ON public.profiles
 
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 
--- Categories & Products: Public read
+DROP POLICY IF EXISTS "Admins can manage all profiles" ON public.profiles;
+CREATE POLICY "Admins can manage all profiles" ON public.profiles
+  FOR ALL USING (public.is_admin());
+
+-- Categories & Products: Public read, Admin full manage
 DROP POLICY IF EXISTS "Public read active categories" ON public.categories;
 CREATE POLICY "Public read active categories" ON public.categories
   FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins can manage all categories" ON public.categories;
+CREATE POLICY "Admins can manage all categories" ON public.categories
+  FOR ALL USING (public.is_admin());
 
 DROP POLICY IF EXISTS "Public read active products" ON public.products;
 CREATE POLICY "Public read active products" ON public.products
   FOR SELECT USING (true);
 
--- Subscriptions: User can view, insert, and update their own subscription
+DROP POLICY IF EXISTS "Admins can manage all products" ON public.products;
+CREATE POLICY "Admins can manage all products" ON public.products
+  FOR ALL USING (public.is_admin());
+
+-- Subscriptions: User can view, insert, and update their own subscription. Admin full manage.
 DROP POLICY IF EXISTS "Users can view own subscriptions" ON public.subscriptions;
 CREATE POLICY "Users can view own subscriptions" ON public.subscriptions
   FOR SELECT USING (auth.uid() = user_id);
@@ -336,7 +359,11 @@ DROP POLICY IF EXISTS "Users can update own subscription" ON public.subscription
 CREATE POLICY "Users can update own subscription" ON public.subscriptions
   FOR UPDATE USING (auth.uid() = user_id);
 
--- Deliveries: User can view, insert, and update their own deliveries
+DROP POLICY IF EXISTS "Admins can manage all subscriptions" ON public.subscriptions;
+CREATE POLICY "Admins can manage all subscriptions" ON public.subscriptions
+  FOR ALL USING (public.is_admin());
+
+-- Deliveries: User can view, insert, and update their own deliveries. Admin full manage.
 DROP POLICY IF EXISTS "Users can view own deliveries" ON public.deliveries;
 CREATE POLICY "Users can view own deliveries" ON public.deliveries
   FOR SELECT USING (auth.uid() = user_id);
@@ -349,20 +376,36 @@ DROP POLICY IF EXISTS "Users can update own deliveries" ON public.deliveries;
 CREATE POLICY "Users can update own deliveries" ON public.deliveries
   FOR UPDATE USING (auth.uid() = user_id);
 
--- Meal Preferences: User can read/write own preferences
+DROP POLICY IF EXISTS "Admins can manage all deliveries" ON public.deliveries;
+CREATE POLICY "Admins can manage all deliveries" ON public.deliveries
+  FOR ALL USING (public.is_admin());
+
+-- Meal Preferences: User can read/write own preferences. Admin full manage.
 DROP POLICY IF EXISTS "Users can manage own preferences" ON public.meal_preferences;
 CREATE POLICY "Users can manage own preferences" ON public.meal_preferences
   FOR ALL USING (auth.uid() = user_id);
 
--- Notifications: User can read/update own notifications
+DROP POLICY IF EXISTS "Admins can manage all preferences" ON public.meal_preferences;
+CREATE POLICY "Admins can manage all preferences" ON public.meal_preferences
+  FOR ALL USING (public.is_admin());
+
+-- Notifications: User can read/update own notifications. Admin full manage.
 DROP POLICY IF EXISTS "Users can manage own notifications" ON public.notifications;
 CREATE POLICY "Users can manage own notifications" ON public.notifications
   FOR ALL USING (auth.uid() = user_id);
 
--- Contact Messages: Anyone can insert a contact message
+DROP POLICY IF EXISTS "Admins can manage all notifications" ON public.notifications;
+CREATE POLICY "Admins can manage all notifications" ON public.notifications
+  FOR ALL USING (public.is_admin());
+
+-- Contact Messages: Anyone can insert a contact message. Admin full manage.
 DROP POLICY IF EXISTS "Anyone can submit contact message" ON public.contact_messages;
 CREATE POLICY "Anyone can submit contact message" ON public.contact_messages
   FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Admins can manage all contact messages" ON public.contact_messages;
+CREATE POLICY "Admins can manage all contact messages" ON public.contact_messages
+  FOR ALL USING (public.is_admin());
 
 -- ---------------------------------------------------------
 -- 12. SEED DATA (CATEGORIES & PRODUCTS)

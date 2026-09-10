@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
+import { AdminAuthProvider } from '@/context/AdminAuthContext';
 
 export const metadata: Metadata = {
   title: 'Love Thy Salad | Healthy Food Cloud Kitchen in Baner, Pune',
@@ -32,9 +33,11 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-salad-bg text-salad-charcoal antialiased flex flex-col min-h-screen">
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <AdminAuthProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </AdminAuthProvider>
       </body>
     </html>
   );

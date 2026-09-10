@@ -48,6 +48,7 @@ export type SubscriptionStatus = 'active' | 'completed' | 'paused';
 export interface Subscription {
   id: string;
   user_id: string;
+  user?: Profile;
   total_meals: number;
   meals_delivered: number;
   meals_remaining: number;
@@ -64,6 +65,7 @@ export interface Delivery {
   id: string;
   subscription_id: string;
   user_id: string;
+  user?: Profile;
   product_id?: string;
   product?: Product;
   delivery_date: string;
